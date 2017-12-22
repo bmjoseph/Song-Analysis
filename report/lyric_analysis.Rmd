@@ -1,0 +1,173 @@
+---
+title: "Lyric_Analysis"
+author: "Bailey Joseph"
+date: "12/20/2017"
+output: html_document
+---
+
+
+```{r, loading packages, results = "show", message = TRUE}
+library(dplyr) # For manipulating data frames
+library(tm) # for wordcloud
+library(SnowballC) # For text stemming
+library(wordcloud) # Generates wordcloud images
+library(RColorBrewer) #  For Color Paletts 
+# library(RCurl) # possible dependency in wordcloud function
+library(ggplot2) # For Visualizations
+source("../code/swift_lyric_cleaning.R")
+source("../code/pop_lyric_cleaning.R")
+source("../code/drake_lyric_cleaning.R")
+
+```
+
+
+```{r, make a data frame with title and words}
+# Initialize vectors of the correct length
+total_words_by_ts_song <- rep(0, length(all_ts_song_lyrics))
+unique_words_by_ts_song <- rep(0, length(all_ts_song_lyrics))
+
+total_words_by_drake_song <- rep(0, length(all_drake_song_lyrics))
+unique_words_by_drake_song <- rep(0, length(all_drake_song_lyrics))
+
+total_words_by_pop_song <- rep(0, length(top_pop_song_lyrics))
+unique_words_by_pop_song <- rep(0, length(top_pop_song_lyrics))
+
+# Use a for loop to add the accurate length one song at a time
+for (i in 1:length(total_words_by_ts_song)) {
+  total_words_by_ts_song[i] <- length(all_ts_song_lyrics[[i]])
+}
+
+for (i in 1:length(total_words_by_drake_song)) {
+  total_words_by_drake_song[i] <- length(all_drake_song_lyrics[[i]])
+}
+
+for (i in 1:length(total_words_by_pop_song)) {
+  total_words_by_pop_song[i] <- length(top_pop_song_lyrics[[i]])
+}
+
+# Use a for loop to add the number of unique words per song
+for (i in 1:length(unique_words_by_ts_song)) {
+  unique_words_by_ts_song[i] <- length(unique(all_ts_song_lyrics[[i]]))
+}
+
+for (i in 1:length(unique_words_by_drake_song)) {
+  unique_words_by_drake_song[i] <- length(unique(all_drake_song_lyrics[[i]]))
+}
+
+for (i in 1:length(unique_words_by_pop_song)) {
+  unique_words_by_pop_song[i] <- length(unique(top_pop_song_lyrics[[i]]))
+}
+
+# Make a dataframe with one row per song: 
+song_frame <- data.frame("Title" = c(all_ts_song_names,
+                                        all_drake_song_names,
+                                        top_pop_names))
+
+song_frame$Total_Words <-  c(total_words_by_ts_song,
+                             total_words_by_drake_song,
+                             total_words_by_pop_song)
+
+song_frame$Unique_Words <- c(unique_words_by_ts_song,
+                             unique_words_by_drake_song,
+                             unique_words_by_pop_song)
+
+# Divide the unique words by the total words for the fraction that are unique
+ts_frac_unique <- unique_words_by_ts_song/total_words_by_ts_song
+
+drake_frac_unique <- unique_words_by_drake_song/total_words_by_drake_song
+
+pop_frac_unique <- unique_words_by_pop_song/total_words_by_pop_song
+
+# Add the appropriate column
+song_frame$Fraction_Unique <- c(ts_frac_unique,
+                                drake_frac_unique,
+                                pop_frac_unique)
+
+# Add a column specifying years since 2006
+years_since_2006 <- c(rep(0, 14), rep(2, 13), rep(3, 5),
+                      rep(4, 14), rep(6, 16), rep(8, 16),
+                      rep(11, 15), rep(5, 16), rep(7, 13),
+                      rep(9, 15), rep(10, 20), rep(11, 20),
+                      rep(11, 5), rep(10, 5), rep(9, 5),
+                      rep(8, 5), rep(7, 5))
+
+
+song_frame$Years_Since_2006 <- years_since_2006
+song_frame$Years_Since_2006 <- as.numeric(song_frame$Years_Since_2006)
+
+# Add a column for album
+
+artist <- c(rep("Taylor Swift", length(all_ts_song_lyrics)),
+            rep("Drake", length(all_drake_song_lyrics)),
+            rep("Pop Charts", length(top_pop_song_lyrics)))
+
+song_frame$Artist <- artist
+
+head(song_frame)
+```
+
+```{r}
+len_vs_unique <- (ggplot(data = song_frame,
+                        aes(x = Total_Words,
+                            y = Fraction_Unique)) + 
+                   geom_point(size = 2,
+                              aes(color  = Artist)) +
+                   #geom_label(aes(label = Title, color = Artist),
+                         #    alpha = 1,
+                         #     nudge_x = .25,
+                         #     nudge_y = .01,
+                         #     size = 2.5) +
+                   labs(title = "Song Word Uniqueness Against Length",
+                         x = "Total Words",
+                         y = "Fraction of Lyrics that are Unique") +
+                    # ylim(c(0,1)) +
+        # This puts in text describing the R^2 value for these variables
+                      # annotate("text", x=575, y=.45, size = 6,
+                          #      label= "italic(R) == -.602", parse = TRUE) +
+        # This is totally optional and just to make the plot look better
+                    theme(plot.title = element_text(color = "black",
+                                                    size = 14,
+                                                    face = "bold.italic"),
+                          axis.title.x = element_text(size = 12,
+                                                  face = "bold"),
+                          axis.title.y = element_text(size = 12,
+                                                      face = "bold")) +
+        # This adds in the linear regression line
+                          geom_smooth(method = lm,
+                                      se = FALSE,
+                                      aes(color = Artist)))
+len_vs_unique
+```
+
+```{r}
+mean(filter(song_frame, Artist == "Pop Charts")$Fraction_Unique)
+mean(filter(song_frame, Artist == "Taylor Swift")$Fraction_Unique)
+mean(filter(song_frame, Artist == "Drake")$Fraction_Unique)
+
+```
+
+```{r}
+song_plot <- (ggplot(data = song_frame,
+                        aes(x = Years_Since_2006,
+                            y = Fraction_Unique,
+                            color = Artist)) + 
+                   geom_point(size = 2, alpha = .5) +
+        # This next line ensures the labels aren't cut off
+                   xlim(c(-1, 13)) +
+                   labs(title = "Lyric Repetition Over Time",
+                         x = "Years Since 2006",
+                         y = "Fraction of Words that are Not Repeated (by Song)") +
+        # This is totally optional and just to make the plot look better
+                    theme(plot.title = element_text(color = "black",
+                                                    size = 14,
+                                                    face = "bold.italic"),
+                          axis.title.x = element_text(size = 12,
+                                                  face = "bold"),
+                          axis.title.y = element_text(size = 12,
+                                                      face = "bold"))) 
+
+song_plot
+```
+
+
+

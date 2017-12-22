@@ -1,0 +1,200 @@
+---
+title: "Analysis Of Drake Lyrics"
+author: "Bailey Joseph"
+date: "12/20/2017"
+output: html_document
+---
+
+```{r}
+rm(list=ls())
+```
+
+
+```{r, loading packages, results = "show", message = TRUE}
+library(dplyr) # For manipulating data frames
+library(tm) # for wordcloud
+library(SnowballC) # For text stemming
+library(wordcloud) # Generates wordcloud images
+library(RColorBrewer) #  For Color Paletts 
+# library(RCurl) # possible dependency in wordcloud function
+library(ggplot2) # For Visualizations
+source("../code/drake_lyric_cleaning.R")
+```
+
+
+```{r, make a data frame with title and words}
+# Initialize vectors of the correct length
+total_words_by_drake_song <- rep(0, length(all_drake_song_lyrics))
+unique_words_by_drake_song <- rep(0, length(all_drake_song_lyrics))
+
+# Use a for loop to add the accurate length one song at a time
+for (i in 1:length(total_words_by_drake_song)) {
+  total_words_by_drake_song[i] <- length(all_drake_song_lyrics[[i]])
+}
+
+# Use a for loop to add the number of unique words per song
+for (i in 1:length(unique_words_by_drake_song)) {
+  unique_words_by_drake_song[i] <- length(unique(all_drake_song_lyrics[[i]]))
+}
+# Make a dataframe with one row per song: 
+drake_song_frame <- data.frame("Title" = all_drake_song_names,
+                         "Total_Words" = total_words_by_drake_song)
+
+drake_song_frame$Unique_Words <- unique_words_by_drake_song
+
+# Divide the unique words by the total words for the fraction that are unique
+drake_frac_unique <- unique_words_by_drake_song/total_words_by_drake_song
+
+# Add the appropriate column
+drake_song_frame$Fraction_Unique <- drake_frac_unique
+
+# Add a column specifying years since 2006
+album_number <- c(rep(1, 16), rep(2, 13), rep(3, 15),
+                      rep(4, 20), rep(5, 20))
+
+drake_song_frame$Album_Number <- album_number
+drake_song_frame$Album_Number <- as.numeric(drake_song_frame$Album_Number)
+
+# Add a column for album
+album <- c(rep("Take Care", 16),
+           rep("Nothing Was The Same", 13),
+           rep("If You're Reading This It's Too Late", 15),
+           rep("Views", 20),
+           rep("More Life", 20))
+
+
+drake_song_frame$Album <- album
+head(drake_song_frame)
+```
+
+
+```{r, create a plot}
+drake_song_plot <- (ggplot(data = drake_song_frame,
+                        aes(x = Album_Number,
+                            y = Fraction_Unique,
+                            color = Album)) + 
+                   geom_point(size = 2) +
+        # This next line ensures the labels aren't cut off
+                   #xlim(c(0, 6)) +
+                   labs(title = "Lyric Repetition Over Time",
+                         x = "Album Number",
+                         y = "Fraction of Words that are Not Repeated (by Song)") +
+        # This is totally optional and just to make the plot look better
+                    theme(plot.title = element_text(color = "black",
+                                                    size = 14,
+                                                    face = "bold.italic"),
+                          axis.title.x = element_text(size = 12,
+                                                  face = "bold"),
+                          axis.title.y = element_text(size = 12,
+                                                      face = "bold"))) 
+
+drake_song_plot
+```
+
+```{r, examine uniqueness against song length}
+song_len_vs_unique_cor <- cor(drake_song_frame$Total_Words, drake_song_frame$Fraction_Unique)
+drake_len_vs_unique <- (ggplot(data = drake_song_frame,
+                        aes(x = Total_Words,
+                            y = Fraction_Unique)) + 
+                   geom_point(size = 2, aes(color  = Album)) +
+                  # geom_label(aes(label = Title, color = Album),
+                             # alpha = 1,
+                             # nudge_x = .25,
+                            #  nudge_y = .01,
+                            #  size = 2.5) +
+                   labs(title = "Song Word Uniqueness Against Length",
+                         x = "Total Words",
+                         y = "Fraction of Lyrics that are Unique") +
+                    # ylim(c(0,1)) +
+        # This puts in text describing the R^2 value for these variables
+                       annotate("text", x=575, y=.45, size = 6,
+                                label= "italic(R) == -.602", parse = TRUE) +
+        # This is totally optional and just to make the plot look better
+                    theme(plot.title = element_text(color = "black",
+                                                    size = 14,
+                                                    face = "bold.italic"),
+                          axis.title.x = element_text(size = 12,
+                                                  face = "bold"),
+                          axis.title.y = element_text(size = 12,
+                                                      face = "bold")) +
+        # This adds in the linear regression line
+                          geom_smooth(method = lm))
+drake_len_vs_unique
+```
+
+```{r, create a list of all words}
+# This will be automatically extended to the required length later
+all_word_list <- rep(NA, 20)
+
+# A for loop to generate our desired vector
+i <- 1
+for (song in all_drake_song_lyrics) {
+  for (word_pos in 1:length(song)) {
+    all_word_list[i] <- song[word_pos]
+    i <- i + 1
+  }
+}
+
+# To make our eventual cloud more interesting, let's restrict to only words 
+# Of at least 4 characters
+all_long_words <- all_word_list[nchar(all_word_list) >= 4]
+```
+
+In order to make a wordcloud, you need something called a "corpus," which is essentially just a collection of documents which contain text data. The tm package has the two functions we need to create that object, namely `VectorSource()`, whose output provides a suitable input to the second function, `Corpus()`. 
+
+```{r, create a corpus of lyrics}
+lyric_corpus <- Corpus(VectorSource(all_long_words))
+```
+
+
+
+```{r, plot a word cloud}
+# Set a seed so that the produced output is the same every time
+set.seed(13)
+
+# Use the wordcloud function. The first argument is the corpus we created earlier
+wordcloud(lyric_corpus,
+      # Next set the total number of words we want to appear on our plot. I'll choose 75.
+          max.words = 75,
+      # This argument ensures the most common words are in the center
+          random.order = FALSE,
+      # Plot with a selection of shades of blue for some visual appeal
+         colors = c("deepskyblue",  "deepskyblue3", "dodgerblue",
+                     "dodgerblue3", "light blue", "turquoise"))
+
+```
+
+```{r}
+drake_word_lengths <- rep(0, 17)
+for (song in all_drake_song_lyrics) {
+  for (word_pos in 1:length(song)) {
+    current_length <- nchar(song[word_pos])
+    drake_word_lengths[current_length] <- drake_word_lengths[current_length] + 1
+  }
+}
+drake_word_lengths
+```
+
+```{r}
+drake_word_length_frame <- data.frame("length" = 2:17,
+                                "count" = drake_word_lengths[2:17],
+                                "proportion" = drake_word_lengths[2:17]/sum(drake_word_lengths[2:17]))
+drake_word_length_dist <- (ggplot(data = drake_word_length_frame, aes(x = length, y = proportion)) + 
+                       geom_bar(stat = "identity", fill = "blue", alpha = .75) +
+                       geom_text(label = round(drake_word_length_frame$proportion, 2),
+                                 nudge_y = .0100) +
+                       scale_x_continuous(breaks = 1:17) +
+                       labs(title = "Distribution of Word Lengths in Drake Songs",
+                            x = "Number of Letters",
+                            y = "Proportion of Words") +
+                       theme(plot.title = element_text(color = "black",
+                                                    size = 14,
+                                                    face = "bold.italic"),
+                          axis.title.x = element_text(size = 12,
+                                                  face = "bold"),
+                          axis.title.y = element_text(size = 12,
+                                                      face = "bold")))
+                            
+drake_word_length_dist
+```
+
