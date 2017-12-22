@@ -2,7 +2,7 @@
 title: "Taylor Swift Song Analysis"
 author: "Bailey Joseph"
 date: "12/21/2017"
-output:
+output: 
   html_document:
     theme: cerulean
 ---
