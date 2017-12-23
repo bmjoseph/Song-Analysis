@@ -3,6 +3,12 @@ Taylor Swift Song Analysis
 Bailey Joseph
 12/21/2017
 
+<br>
+
+![](../images/long_taylor_row.jpg)
+
+<br>
+
 I've been a Taylor Swift fan ever since my mom played *Speak Now* for me in the car on the way to my tennis practice in 8th grade. I couldn't get enough and worked my way though listening to all of her albums almost every day. In the seven years since then, Taylor has changed her style dramatically with each new album she releases. She's also steadily transitioned from country music to pop music, with her first album being true country and 1989 being her first true pop album. I was interested to see how her lyrical tendencies changed over time, so decided to make an analysis on repitition in her songs.
 
 It's not easy to measure just how repetitive a song feels while listening to it, since the way words are paced, pronounced, and arranged (as well as the music itself) can make a big difference. So while there's no one perfect measure for repition in songs, I'll be choosing one that's fairly straightforward and objective. I'll look at the fraction of words in the song that are never repeated (unique). For example, the sentence "two plus two is four" has 5 total words, but only 4 unique words, since "two" is repeated. This gives a fraction of 4/5, or .8. If we change the sentence to "two plus two is two plus two," it becomes obviously more repetitive. Our measure captures this, as there are now 7 total words and only three of them are unique, giving 3/7, or around .43. These decimals are what you'll see on the graphs that follow, so the important thing to note is that lower numbers correspond to more repetitive songs.
@@ -14,7 +20,7 @@ This graph shows the repitition in all songs from Taylor's studio albums (includ
 ![](final_song_analysis_files/figure-markdown_github/create%20a%20plot-1.png)
 
 As you can see, repition has generally increased (points are farther down) througout Taylor's career.
-Her first two albums and *Fearless Platinium* are almost identicl (the low outlier in *Fearless Platinum* is "Untouchable" which actually wasn't written by Taylor).
+Her first two albums and *Fearless Platinium* are almost identical (the low outlier in *Fearless Platinum* is "Untouchable" which actually wasn't written by Taylor).
 *Speak Now* is pretty similar as well, but much less spread out. This may be because she wrote all those songs entirely by herself, so the songwriting tastes of other artists didn't come in and add variation.
 *Red* felt to me like a true blend of country songs and pop songs, and that's reflected by the large amoung of variation.
 The last two albums are closer to true pop and have noticably more repition. It is interesting how close together the songs are in *Reputation*. Every song on *Reputation* had co-authors, so this may be more indicitive of the cohesive sound throughout the album than anything else.
